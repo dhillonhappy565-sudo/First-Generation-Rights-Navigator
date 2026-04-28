@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, FileText, IndianRupee, MapPin, Target, Volume2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, IndianRupee, MapPin, Target, Volume2 } from 'lucide-react';
 import api from '../api/client';
 import { speakText } from '../utils/tts';
 
@@ -83,29 +83,23 @@ const SchemeDetail = () => {
                <CheckCircle2 className="mr-2 text-green-500" /> Eligibility
             </h2>
             <ul className="space-y-3 relative text-slate-600">
-              {scheme.eligibility?.age && (
+              {scheme.eligibility && typeof scheme.eligibility === 'object' ? (
+                Object.entries(scheme.eligibility).map(([key, value]) => (
+                  <li key={key} className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
+                    <span className="capitalize">
+                      <strong>{key}:</strong>{' '}
+                      {Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
+                    </span>
+                  </li>
+                ))
+              ) : scheme.eligibility ? (
                 <li className="flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
-                  <span>Age: {scheme.eligibility.age.min || 0} to {scheme.eligibility.age.max || "100"} years</span>
+                  <span>{String(scheme.eligibility)}</span>
                 </li>
-              )}
-              {scheme.eligibility?.income?.max && (
-                <li className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
-                  <span>Income below ₹{scheme.eligibility.income.max} per annum</span>
-                </li>
-              )}
-              {scheme.eligibility?.occupation && (
-                <li className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
-                  <span>Occupation: {Array.isArray(scheme.eligibility.occupation) ? scheme.eligibility.occupation.join(", ") : scheme.eligibility.occupation}</span>
-                </li>
-              )}
-              {scheme.eligibility?.gender && (
-                <li className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></div>
-                  <span>Gender criteria: {scheme.eligibility.gender}</span>
-                </li>
+              ) : (
+                <li className="text-slate-400 text-sm">No eligibility information available.</li>
               )}
             </ul>
           </div>

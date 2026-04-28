@@ -43,52 +43,60 @@ router.post('/recommend', async (req, res) => {
   }
 
   try {
-    const schemes = await Scheme.find({});
+    const schemes = await Scheme.find({}).lean();
     
-    // Scoring Logic
     const scoredSchemes = schemes.map(scheme => {
       let score = 0;
-      
+      const raw = JSON.stringify(scheme).toLowerCase();
+
       // State Match
-      if (scheme.state === profile.state || scheme.state === 'Central' || scheme.state === 'All') {
-        score += 2;
-      }
-      
-      // Occupation Match
-      if (scheme.eligibility?.occupation && scheme.eligibility.occupation.includes(profile.occupation)) {
-        score += 2;
+      if (profile.state) {
+        const userState = profile.state.toLowerCase();
+        const schemeState = (scheme.state || '').toLowerCase();
+        if (schemeState === 'all' || schemeState === 'central' || schemeState === userState || schemeState.includes(userState)) {
+          score += 3;
+        }
       }
 
-      // Income Match (If user income is less than or equal to requirement)
-      if (scheme.eligibility?.income?.max && profile.income) {
-         if (profile.income <= scheme.eligibility.income.max) score += 1;
+      // Occupation Match
+      if (profile.occupation) {
+        const occ = profile.occupation.toLowerCase();
+        const eligStr = JSON.stringify(scheme.eligibility || {}).toLowerCase();
+        if (eligStr.includes(occ)) score += 3;
+        if (scheme.tags && Array.isArray(scheme.tags) && scheme.tags.some(t => t.toLowerCase().includes(occ))) score += 2;
       }
 
       // Age Match
-      if (scheme.eligibility?.age && profile.age) {
-        if (
-          (!scheme.eligibility.age.min || profile.age >= scheme.eligibility.age.min) &&
-          (!scheme.eligibility.age.max || profile.age <= scheme.eligibility.age.max)
-        ) {
-          score += 1;
+      if (profile.age) {
+        const age = Number(profile.age);
+        const elig = scheme.eligibility || {};
+        if (elig.age) {
+          if (typeof elig.age === 'object' && elig.age !== null) {
+            const min = Number(elig.age.min) || 0;
+            const max = Number(elig.age.max) || 150;
+            if (age >= min && age <= max) score += 2;
+          } else {
+            const ageStr = String(elig.age);
+            const rangeMatch = ageStr.match(/(\d+)\s*[-–to]+\s*(\d+)/);
+            if (rangeMatch && age >= Number(rangeMatch[1]) && age <= Number(rangeMatch[2])) score += 2;
+          }
+        }
+        if (age >= 60 && (raw.includes('senior') || raw.includes('old age') || raw.includes('pension') || raw.includes('elderly'))) {
+          score += 3;
         }
       }
 
-      // Tag match (mock basic word matching)
-      if (scheme.tags && profile.purpose) {
-        const purposeLower = profile.purpose.toLowerCase();
-        for (const tag of scheme.tags) {
-           if (purposeLower.includes(tag.toLowerCase())) score += 1;
-        }
+      // Gender Match
+      if (profile.gender) {
+        const g = profile.gender.toLowerCase();
+        const eligStr = JSON.stringify(scheme.eligibility || {}).toLowerCase();
+        if (eligStr.includes(g)) score += 1;
       }
 
       return { scheme, score };
     });
 
-    // Sort descending by score
     scoredSchemes.sort((a, b) => b.score - a.score);
-
-    // Return top 5
     res.json(scoredSchemes.slice(0, 5).map(s => s.scheme));
 
   } catch (error) {
@@ -97,3 +105,4 @@ router.post('/recommend', async (req, res) => {
 });
 
 export default router;
+
