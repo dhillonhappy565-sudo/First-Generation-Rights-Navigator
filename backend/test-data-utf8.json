@@ -1,0 +1,21 @@
+{
+  "_id": "69f07e410cdc6ae07949fcf4",
+  "scheme_name": "PM-KISAN",
+  "level": "central",
+  "state": "All",
+  "category": "Financial",
+  "tags": [
+    "farmer"
+  ],
+  "eligibility": {
+    "occupation": [
+      "Farmer"
+    ],
+    "income": "<2L"
+  },
+  "documents": [
+    "Aadhaar",
+    "Land Records"
+  ],
+  "benefits": "₹6000/year"
+}
